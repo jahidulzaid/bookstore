@@ -49,6 +49,8 @@
         <h1>Bookstore Inventory</h1>
         <a href="create_book.php" class="btn">Add New Book</a>
         <a href="view_books.php" class="btn">View Books</a>
+        <a href="view_book_with_image.php" class="btn">View Books with Image</a> <br>
+        <a href="search_book.php" class="btn">Search Book</a>
     </div>
 </body>
 </html>

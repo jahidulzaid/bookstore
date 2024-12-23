@@ -21,7 +21,7 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
             width: 90%;
-            max-width: 900px;
+            max-width: 1000px;
         }
         h1 {
             text-align: center;
@@ -70,6 +70,12 @@
         .btn-delete:hover {
             background-color: #c82333;
         }
+        img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -78,10 +84,17 @@
 
         <?php
         include 'db_connect.php';
-
         if (isset($_GET['delete_id'])) {
             $book_id = $_GET['delete_id'];
-
+            $sql = "SELECT Book_Image FROM Books WHERE BookID = $book_id";
+            $result = $connection->query($sql);
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $imagePath = 'uploads/' . $row['Book_Image'];
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
+            }
             $sql = "DELETE FROM Books WHERE BookID = $book_id";
             if ($connection->query($sql) === true) {
                 echo "<p>Book deleted successfully!</p>";
@@ -89,17 +102,16 @@
                 echo "Error deleting record: " . $connection->error;
             }
         }
-
         $sql = "SELECT * FROM Books";
         $result = $connection->query($sql);
-
         if ($result->num_rows > 0) {
             echo "<table>";
-            echo "<tr><th>Book ID</th><th>Title</th><th>Author</th><th>Genre</th><th>Price</th><th>Stock</th><th>Actions</th></tr>";
-
+            echo "<tr><th>Book ID</th><th>Image</th><th>Title</th><th>Author</th><th>Genre</th><th>Price</th><th>Stock</th><th>Actions</th></tr>";
             while ($row = $result->fetch_assoc()) {
+                $imagePath = !empty($row['Book_Image']) ? $row['Book_Image'] : 'uploads/default.png';
                 echo "<tr>";
                 echo "<td>" . $row['BookID'] . "</td>";
+                echo "<td><img src='$imagePath' alt='Book Image'></td>";
                 echo "<td>" . $row['Title'] . "</td>";
                 echo "<td>" . $row['Author'] . "</td>";
                 echo "<td>" . $row['Genre'] . "</td>";
@@ -107,15 +119,15 @@
                 echo "<td>" . $row['Stock'] . "</td>";
                 echo "<td>
                     <a class='btn btn-update' href='update_book.php?id=" . $row['BookID'] . "'>Update</a> 
-                    <a class='btn btn-delete' href='view_books.php?delete_id=" . $row['BookID'] . "' onclick=\"return confirm('Are you sure you want to delete this book?');\">Delete</a>
+                    <a class='btn btn-delete' href='view_book_with_image.php?delete_id=" . $row['BookID'] . "' onclick=\"return confirm('Are you sure you want to delete this book?');\">Delete</a>
                     </td>";
                 echo "</tr>";
             }
-
             echo "</table>";
         } else {
             echo "<p>No books found in the inventory!</p>";
         }
+        
         $connection->close();
         ?>
 
