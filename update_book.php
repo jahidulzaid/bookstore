@@ -21,124 +21,156 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
             width: 90%;
-            max-width: 400px;
+            max-width: 500px;
         }
         h1 {
             text-align: center;
             margin-bottom: 20px;
             color: #333;
         }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
         label {
-            display: block;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             font-weight: bold;
         }
-        input[type="text"], input[type="number"] {
-            width: 100%;
+        input[type="text"], input[type="number"], input[type="file"] {
+            margin-bottom: 15px;
             padding: 10px;
-            margin-bottom: 20px;
+            font-size: 16px;
+            width: 100%;
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-        .btn {
-            display: inline-block;
-            margin-top: 10px;
+        input[type="submit"] {
             padding: 10px 20px;
             font-size: 16px;
-            text-decoration: none;
+            background-color: #007bff;
             color: #fff;
-            background: #007bff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            text-align: center;
             transition: background 0.3s ease;
         }
-        .btn:hover {
-            background: #0056b3;
+        input[type="submit"]:hover {
+            background-color: #0056b3;
         }
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            text-decoration: none;
-            color: #007bff;
+        img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            margin-bottom: 10px;
+            border-radius: 5px;
         }
-        .back-link:hover {
-            text-decoration: underline;
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Update Book</h1>
 
-        <?php
-        // Include the database connection file
-        include 'db_connect.php';
+<div class="container">
+    <h1>Update Book</h1>
 
-        // Check if 'id' is provided in the URL
-        if (isset($_GET['id'])) {
-            $book_id = $_GET['id'];
+    <?php
+    include 'db_connect.php';
 
-            // Retrieve the book's current information
-            $sql = "SELECT * FROM Books WHERE BookID = $book_id";
-            $result = $connection->query($sql);
+    if (isset($_GET['id'])) {
+        $book_id = $_GET['id'];
 
-            if ($result->num_rows > 0) {
-                $book = $result->fetch_assoc();
+        $sql = "SELECT * FROM Books WHERE BookID = $book_id";
+        $result = $connection->query($sql);
+        $book = $result->fetch_assoc();
+    }
+
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        $book_id = $_POST['book_id'];
+        $title = $_POST['title'];
+        $author = $_POST['author'];
+        $genre = $_POST['genre'];
+        $price = $_POST['price'];
+        $stock = $_POST['stock'];
+
+        $targetDir = "uploads/"; 
+        $fileUploaded = !empty($_FILES["book_image"]["name"]);
+        $fileName = $fileUploaded ? basename($_FILES["book_image"]["name"]) : null;
+        $targetFilePath = $fileUploaded ? $targetDir . uniqid() . "_" . $fileName : null;
+        $fileType = $fileUploaded ? strtolower(pathinfo($targetFilePath, PATHINFO_EXTENSION)) : null;
+
+        $uploadSuccess = true;
+
+        if ($fileUploaded) {
+            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+            if (in_array($fileType, $allowedTypes)) {
+                if (!move_uploaded_file($_FILES["book_image"]["tmp_name"], $targetFilePath)) {
+                    echo "<p class='error'>There was an error uploading the image.</p>";
+                    $uploadSuccess = false;
+                }
             } else {
-                echo "<p>Book not found!</p>";
-                exit;
+                echo "<p class='error'>Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.</p>";
+                $uploadSuccess = false;
             }
         }
 
-        // Handle form submission to update the book's details
-        if ($_SERVER["REQUEST_METHOD"] == "POST") {
-            $book_id = $_POST['book_id'];
-            $title = $_POST['title'];
-            $author = $connection->real_escape_string($_POST['author']);
-            $genre = $connection->real_escape_string($_POST['genre']);
-            $price = $connection->real_escape_string($_POST['price']);
-            $stock = $connection->real_escape_string($_POST['stock']);
+        if ($uploadSuccess) {
+            $bookImagePath = $fileUploaded ? $targetFilePath : $book['Book_Image'];
 
-            // Update the book details in the database
             $sql = "UPDATE Books 
-                    SET Title='$title', Author='$author', Genre='$genre', Price=$price, Stock=$stock 
-                    WHERE BookID=$book_id";
+                    SET Title = '$title', 
+                        Author = '$author', 
+                        Genre = '$genre', 
+                        Price = $price, 
+                        Stock = $stock, 
+                        Book_Image = " . ($fileUploaded ? "'$bookImagePath'" : "Book_Image") . " 
+                    WHERE BookID = $book_id";
 
             if ($connection->query($sql) === true) {
-                echo "<p>Book details updated successfully!</p>";
-                echo '<a class="btn" href="view_books.php">View All Books</a>';
-                exit;
+                echo "<p class='success'>Book updated successfully!</p>";
             } else {
-                echo "Error: " . $sql . "<br>" . $connection->error;
+                echo "<p class='error'>Error updating record: " . $connection->error . "</p>";
             }
         }
-        ?>
+    }
+    ?>
 
-        <!-- Display the update form with pre-filled values -->
-        <form method="POST" action="update_book.php">
-            <input type="hidden" name="book_id" value="<?php echo $book['BookID']; ?>">
-            
-            <label for="title">Title:</label>
-            <input type="text" name="title" value="<?php echo $book['Title']; ?>" required>
-            
-            <label for="author">Author:</label>
-            <input type="text" name="author" value="<?php echo $book['Author']; ?>" required>
-            
-            <label for="genre">Genre:</label>
-            <input type="text" name="genre" value="<?php echo $book['Genre']; ?>" required>
-            
-            <label for="price">Price:</label>
-            <input type="number" step="0.01" name="price" value="<?php echo $book['Price']; ?>" required>
-            
-            <label for="stock">Stock:</label>
-            <input type="number" name="stock" value="<?php echo $book['Stock']; ?>" required>
-            
-            <input class="btn" type="submit" value="Update Book">
-        </form>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="book_id" value="<?php echo $book['BookID']; ?>">
 
-        <a class="back-link" href="view_books.php">Back to View Books</a>
-    </div>
+        <label for="title">Title:</label>
+        <input type="text" name="title" value="<?php echo $book['Title']; ?>" required>
+
+        <label for="author">Author:</label>
+        <input type="text" name="author" value="<?php echo $book['Author']; ?>" required>
+
+        <label for="genre">Genre:</label>
+        <input type="text" name="genre" value="<?php echo $book['Genre']; ?>" required>
+
+        <label for="price">Price:</label>
+        <input type="number" step="0.01" name="price" value="<?php echo $book['Price']; ?>" required>
+
+        <label for="stock">Stock:</label>
+        <input type="number" name="stock" value="<?php echo $book['Stock']; ?>" required>
+
+        <label for="book_image">Current Image:</label>
+        <?php if ($book['Book_Image']): ?>
+            <img src="<?php echo $book['Book_Image']; ?>" alt="Book Image">
+        <?php else: ?>
+            <p>No image uploaded for this book.</p>
+        <?php endif; ?>
+
+        <label for="book_image">Update Image (optional):</label>
+        <input type="file" name="book_image" accept="image/*">
+
+        <input type="submit" value="Update Book">
+    </form>
+
+    <a href="view_books.php">Back to Book List</a>
+</div>
+
 </body>
 </html>

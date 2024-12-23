@@ -116,8 +116,6 @@
         } else {
             echo "<p>No books found in the inventory!</p>";
         }
-
-        // Close the database connection
         $connection->close();
         ?>
 

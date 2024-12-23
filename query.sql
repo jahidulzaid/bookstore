@@ -13,3 +13,8 @@ CREATE TABLE Books (
     Price DECIMAL(10, 2) NOT NULL,
     Stock INT NOT NULL
 );
+
+-- for adding new col for image
+
+ALTER TABLE Books 
+ADD Book_Image VARCHAR(255) AFTER Stock;
